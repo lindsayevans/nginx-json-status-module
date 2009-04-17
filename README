@@ -1,0 +1,17 @@
+Nginx json_status module
+A version of the Nginx HTTP stub status module that outputs in JSON format
+
+Compiling into Nginx:
+./configure --add-module=/path/to/nginx-json-status-module
+
+Configuration:
+In your nginx.conf:
+
+    location /nginx_status.js {
+        json_status on;
+    }
+
+
+Example output from http://you_host/nginx_status.js (mime-type application/json):
+{active:1,accepts:1,handled:1,requests:5,reading:0,writing:1,waiting:0}
+
