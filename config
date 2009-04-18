@@ -1,3 +1,4 @@
 ngx_addon_name=ngx_http_json_status_module
+have=NGX_STAT_STUB . auto/have
 HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES ngx_http_json_status_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_json_status_module.c"
