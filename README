@@ -1,6 +1,9 @@
 Nginx json_status module
 A version of the Nginx HTTP stub status module that outputs in JSON format
 
+WARNING:
+This code WILL eat your cat, crash your server and send your bank details to random Nigerian email addresses. Run at your own risk.
+
 Compiling into Nginx:
 ./configure --add-module=/path/to/nginx-json-status-module
 
