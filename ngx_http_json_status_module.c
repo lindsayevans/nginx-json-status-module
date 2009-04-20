@@ -176,6 +176,9 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     }
 
     free(query);
+    free(qs); // FIXME: causing error
+    free(kv); // FIXME: causing error
+    free(k); // FIXME: causing error
     free(v); // FIXME: causing non-aligned pointer being freed error
     free(brkt);
     free(brkb);
