@@ -11,8 +11,9 @@ Configuration:
 In your nginx.conf:
 
     location /nginx_status.js {
-        json_status on;
-	access_log off;
+        json_status	    on;
+	json_status_type    text/javascript; # Default application/json
+	access_log	    off;
     }
 
 
@@ -23,5 +24,4 @@ Callback support - /nginx_status.js?callback=do_funky_stuff:
 do_funky_stuff({active:1,accepts:1,handled:1,requests:5,reading:0,writing:1,waiting:0});
 
 TODO:
- - Fix stupid malloc errors on free()
- - Set mime-type in config?
+ - Set mime-type in config

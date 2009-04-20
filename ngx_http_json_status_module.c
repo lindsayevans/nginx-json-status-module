@@ -74,6 +74,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         return rc;
     }
 
+    // TODO: read from config json_status_type
     r->headers_out.content_type.len = sizeof("application/json") - 1;
     r->headers_out.content_type.data = (u_char *) "application/json";
 
@@ -90,15 +91,15 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
 
     /* parse query string to get callback */
-    u_char *query = (u_char *) malloc(sizeof(&r->args));
+    u_char *query = (u_char *) malloc(ngx_strlen(&r->args)*sizeof(u_char *));
     char *sep = "&";
     char *kvsep = "=";
-    char *qs = (char *) malloc(sizeof(&r->args));
-    char *kv = (char *) malloc(sizeof(&r->args));
-    char *k = (char *) malloc(sizeof(&r->args));
-    char *v = (char *) malloc(sizeof(&r->args));
-    char *brkt = (char *) malloc(sizeof(&r->args));
-    char *brkb = (char *) malloc(sizeof(&r->args));
+    char *qs = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
+    char *kv = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
+    char *k = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
+    char *v = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
+    char *brkt = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
+    char *brkb = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
 
     v = "";
 
@@ -176,11 +177,11 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     }
 
     free(query);
-    free(qs); // FIXME: causing error
-    free(kv); // FIXME: causing error
-    free(k); // FIXME: causing error
-    free(v); // FIXME: causing non-aligned pointer being freed error
-    free(brkt);
+    //free(qs); // : causing malloc error double free
+    //free(kv); // : causing malloc error double free
+    //free(k); // : causing malloc error double free
+    //free(v); // : causing non-aligned pointer being freed error
+    //free(brkt); // : causing non-aligned pointer being freed error
     free(brkb);
 
     return ngx_http_output_filter(r, &out);
