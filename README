@@ -12,6 +12,12 @@ In your nginx.conf:
     }
 
 
-Example output from http://you_host/nginx_status.js (mime-type application/json):
+Example output - /nginx_status.js:
 {active:1,accepts:1,handled:1,requests:5,reading:0,writing:1,waiting:0}
 
+Callback support - /nginx_status.js?callback=do_funky_stff:
+do_funky_stff({active:1,accepts:1,handled:1,requests:5,reading:0,writing:1,waiting:0});
+
+TODO:
+ - Fix stupid malloc errors on free()
+ - Set mime-type in config?
