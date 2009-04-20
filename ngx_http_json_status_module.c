@@ -8,7 +8,6 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-
 static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd,
                                  void *conf);
 
@@ -88,10 +87,53 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         }
     }
 
+    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
+
+    /* parse query string to get callback */
+    u_char *query = (u_char *) malloc(sizeof(&r->args));
+    char *sep = "&";
+    char *kvsep = "=";
+    char *qs = (char *) malloc(sizeof(&r->args));
+    char *kv = (char *) malloc(sizeof(&r->args));
+    char *k = (char *) malloc(sizeof(&r->args));
+    char *v = (char *) malloc(sizeof(&r->args));
+    char *brkt = (char *) malloc(sizeof(&r->args));
+    char *brkb = (char *) malloc(sizeof(&r->args));
+
+    v = "";
+
+    ngx_sprintf(query, "%V", (u_char *) &r->args);
+    qs = (char *) query;
+    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "qs: %s", qs);
+
+    if(ngx_strlen(&r->args) > 0){
+ 
+    for(kv = strtok_r(qs, sep, &brkt);
+        kv;
+        kv = strtok_r(NULL, sep, &brkt))
+    {
+	k = strtok_r(kv, kvsep, &brkb);
+	v = strtok_r(NULL, kvsep, &brkb);
+	//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "k=v: %s=%s", k, v);
+
+	if(!strcmp(k, "callback")){
+	   break;
+        }
+
+    }
+
+    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", v);
+
+    }
+
     size = sizeof("{active:,") + NGX_ATOMIC_T_LEN
            + sizeof("accepts:,handled:,requests:,") - 1
            + 6 + 3 * NGX_ATOMIC_T_LEN
            + sizeof("reading:,writing:,waiting:}") + 3 * NGX_ATOMIC_T_LEN;
+
+    if(strlen(v) > 0){
+	size += sizeof(v) + sizeof("();") + NGX_ATOMIC_T_LEN;
+    }
 
     b = ngx_create_temp_buf(r->pool, size);
     if (b == NULL) {
@@ -108,12 +150,19 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     rd = *ngx_stat_reading;
     wr = *ngx_stat_writing;
 
+    if(strlen(v) > 0){
+	b->last = ngx_sprintf(b->last, "%s(", v);
+    }
     b->last = ngx_sprintf(b->last, "{active:%uA,", ac);
 
     b->last = ngx_sprintf(b->last, "accepts:%uA,handled:%uA,requests:%uA,", ap, hn, rq);
 
     b->last = ngx_sprintf(b->last, "reading:%uA,writing:%uA,waiting:%uA}",
                           rd, wr, ac - (rd + wr));
+
+    if(strlen(v) > 0){
+	b->last = ngx_sprintf(b->last, ");");
+    }
 
     r->headers_out.status = NGX_HTTP_OK;
     r->headers_out.content_length_n = b->last - b->pos;
@@ -125,6 +174,11 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
         return rc;
     }
+
+    free(query);
+    free(v); // FIXME: causing non-aligned pointer being freed error
+    free(brkt);
+    free(brkb);
 
     return ngx_http_output_filter(r, &out);
 }
@@ -139,3 +193,4 @@ static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     return NGX_CONF_OK;
 }
+
