@@ -10,11 +10,11 @@ Compiling into Nginx:
 Configuration:
 In your nginx.conf:
 
-    location /nginx_status.js {
-        json_status	    on;
-	json_status_type    text/javascript; # Default application/json
-	access_log	    off;
-    }
+  location /nginx_status.js {
+    json_status         on;
+    json_status_type    text/javascript; # Default application/json
+    access_log          off;
+  }
 
 
 Example output - /nginx_status.js:
