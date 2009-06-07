@@ -75,11 +75,8 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     }
 
     // TODO: read from config json_status_type
-    //r->headers_out.content_type.len = sizeof("application/json") - 1;
-    //r->headers_out.content_type.data = (u_char *) "application/json";
-    r->headers_out.content_type.len = sizeof("text/plain") - 1;
-    r->headers_out.content_type.data = (u_char *) "text/plain";
-
+    r->headers_out.content_type.len = sizeof("application/json") - 1;
+    r->headers_out.content_type.data = (u_char *) "application/json";
 
     if (r->method == NGX_HTTP_HEAD) {
         r->headers_out.status = NGX_HTTP_OK;
@@ -96,7 +93,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
 
     if(ngx_strlen(&r->args.data) > 0){
 
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
+	//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
 
 	/* Parse query string */
 	u_char *params[10];
@@ -107,18 +104,18 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
 
 	params[j] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
 	for(i = 0; i < r->args.len + 1; i++){
-	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS char: %i : %c", i, r->args.data[i]);
+	    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS char: %i : %c", i, r->args.data[i]);
 	    if(i == r->args.len || r->args.data[i] == '&'){
 		params[j][k++] = '\0';
-		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Added to stack: %s", params[j]);
-		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "len: %i", strlen((char *) params[j]));
+		//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Added to stack: %s", params[j]);
+		//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "len: %i", strlen((char *) params[j]));
 
 		kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
 		for(ii = 0; ii <= strlen((char *) params[j]); ii++){
-		    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS KV char: %i : %c", ii, params[j][ii]);
+		    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS KV char: %i : %c", ii, params[j][ii]);
 		    if(ii == strlen((char *) params[j]) || params[j][ii] == '='){
 			kv[jj][kk++] = '\0';
-			ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "   Added to stack: %s", kv[jj]);
+			//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "   Added to stack: %s", kv[jj]);
 			jj++;
 			kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));    
 			kk = 0;
@@ -136,14 +133,14 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
 	    params[j][k] = r->args.data[i];
 	    k++;
 	}
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "get callback");
+	//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "get callback");
 
 	/* Get callback param from query string */
 	for(i = 0; i < jj; i++){
-	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "kv[%i]: %s", i, kv[i]);
+	    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "kv[%i]: %s", i, kv[i]);
 
 	    if(strcmp((const char *) kv[i], "callback") == 0){
-		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "found match at %i: %s, %s", i, kv[i], kv[i+1]);
+		//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "found match at %i: %s, %s", i, kv[i], kv[i+1]);
 
 		cb.data = ngx_pcalloc(r->pool, strlen((char *) kv[i+1]) * sizeof(char *));
 		cb.len = ngx_sprintf(cb.data, (char *) kv[i+1]) - cb.data;
@@ -151,10 +148,9 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
 	    }
 
 	}
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
+	//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
 
     }
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
 
     /* Build response */
     size = sizeof("{active:,") + NGX_ATOMIC_T_LEN
@@ -205,16 +201,6 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
         return rc;
     }
-
-    ///free(query);
-    //free(qs); // : causing malloc error double free
-    //free(kv); // : causing malloc error double free
-    //free(k); // : causing malloc error double free
-    //free(v); // : causing non-aligned pointer being freed error
-    //free(brkt); // : causing non-aligned pointer being freed error
-    ///free(brkb);
-
-    //free(params[j]);
 
     return ngx_http_output_filter(r, &out);
 }
