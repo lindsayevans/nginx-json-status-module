@@ -75,8 +75,11 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     }
 
     // TODO: read from config json_status_type
-    r->headers_out.content_type.len = sizeof("application/json") - 1;
-    r->headers_out.content_type.data = (u_char *) "application/json";
+    //r->headers_out.content_type.len = sizeof("application/json") - 1;
+    //r->headers_out.content_type.data = (u_char *) "application/json";
+    r->headers_out.content_type.len = sizeof("text/plain") - 1;
+    r->headers_out.content_type.data = (u_char *) "text/plain";
+
 
     if (r->method == NGX_HTTP_HEAD) {
         r->headers_out.status = NGX_HTTP_OK;
@@ -134,14 +137,13 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     cb.data = ngx_pcalloc(r->pool, sizeof(char *));
     cb.len = ngx_sprintf(cb.data, "") - cb.data;
 
-
     for(i = 0; i < jj; i++){
 	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "kv[%i]: %s", i, kv[i]);
 
 	if(strcmp((const char *) kv[i], "callback") == 0){
 	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "found match at %i: %s, %s", i, kv[i], kv[i+1]);
 
-	    cb.data = ngx_pcalloc(r->pool, strlen((char *) kv[i+1]) - 1);
+	    cb.data = ngx_pcalloc(r->pool, strlen((char *) kv[i+1]) * sizeof(char *));
 	    cb.len = ngx_sprintf(cb.data, (char *) kv[i+1]) - cb.data;
 
 	}
@@ -242,6 +244,8 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     //free(v); // : causing non-aligned pointer being freed error
     //free(brkt); // : causing non-aligned pointer being freed error
     ///free(brkb);
+
+    //free(params[j]);
 
     return ngx_http_output_filter(r, &out);
 }
