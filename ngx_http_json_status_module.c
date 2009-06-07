@@ -91,109 +91,78 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         }
     }
 
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
 
-    /* parse query string */
-    u_char *params[10];
-    u_int i = 0, j = 0, k = 0;
+    ngx_str_t cb = ngx_string(""); // Callback name
 
-    u_char *kv[20];
-    u_int ii = 0, jj = 0, kk = 0;
+    if(ngx_strlen(&r->args.data) > 0){
 
-    params[j] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
-    for(i = 0; i < r->args.len + 1; i++){
-        //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS char: %i : %c", i, r->args.data[i]);
-        if(i == r->args.len || r->args.data[i] == '&'){
-	    params[j][k++] = '\0';
-	    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Added to stack: %s", params[j]);
-	    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "len: %i", strlen((char *) params[j]));
+	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Parsing query string: %V", &r->args);
 
-	    kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
-	    for(ii = 0; ii <= strlen((char *) params[j]); ii++){
-		//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS KV char: %i : %c", ii, params[j][ii]);
-		if(ii == strlen((char *) params[j]) || params[j][ii] == '='){
-		    kv[jj][kk++] = '\0';
-		    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "   Added to stack: %s", kv[jj]);
-		    jj++;
-		    kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));    
-		    kk = 0;
-		    continue;
+	/* Parse query string */
+	u_char *params[10];
+	u_int i = 0, j = 0, k = 0;
+
+	u_char *kv[20];
+	u_int ii = 0, jj = 0, kk = 0;
+
+	params[j] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
+	for(i = 0; i < r->args.len + 1; i++){
+	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS char: %i : %c", i, r->args.data[i]);
+	    if(i == r->args.len || r->args.data[i] == '&'){
+		params[j][k++] = '\0';
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "Added to stack: %s", params[j]);
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "len: %i", strlen((char *) params[j]));
+
+		kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));
+		for(ii = 0; ii <= strlen((char *) params[j]); ii++){
+		    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "QS KV char: %i : %c", ii, params[j][ii]);
+		    if(ii == strlen((char *) params[j]) || params[j][ii] == '='){
+			kv[jj][kk++] = '\0';
+			ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "   Added to stack: %s", kv[jj]);
+			jj++;
+			kv[jj] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));    
+			kk = 0;
+			continue;
+		    }
+		    kv[jj][kk] = params[j][ii];
+		    kk++;
 		}
-		kv[jj][kk] = params[j][ii];
-		kk++;
+
+		j++;
+		params[j] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));    
+		k = 0;
+		continue;
+	    }
+	    params[j][k] = r->args.data[i];
+	    k++;
+	}
+	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "get callback");
+
+	/* Get callback param from query string */
+	for(i = 0; i < jj; i++){
+	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "kv[%i]: %s", i, kv[i]);
+
+	    if(strcmp((const char *) kv[i], "callback") == 0){
+		ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "found match at %i: %s, %s", i, kv[i], kv[i+1]);
+
+		cb.data = ngx_pcalloc(r->pool, strlen((char *) kv[i+1]) * sizeof(char *));
+		cb.len = ngx_sprintf(cb.data, (char *) kv[i+1]) - cb.data;
+
 	    }
 
-	    j++;
-	    params[j] = (u_char *) malloc(ngx_strlen(r->args.data)*sizeof(u_char *));    
-	    k = 0;
-	    continue;
 	}
-	params[j][k] = r->args.data[i];
-	k++;
-    }
-
-    /* Get callback param from query string */
-    ngx_str_t cb;
-    cb.data = ngx_pcalloc(r->pool, sizeof(char *));
-    cb.len = ngx_sprintf(cb.data, "") - cb.data;
-
-    for(i = 0; i < jj; i++){
-	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "kv[%i]: %s", i, kv[i]);
-
-	if(strcmp((const char *) kv[i], "callback") == 0){
-	    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "found match at %i: %s, %s", i, kv[i], kv[i+1]);
-
-	    cb.data = ngx_pcalloc(r->pool, strlen((char *) kv[i+1]) * sizeof(char *));
-	    cb.len = ngx_sprintf(cb.data, (char *) kv[i+1]) - cb.data;
-
-	}
+	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
 
     }
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
+	ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", cb.data);
 
-    /* parse query string to get callback *
-    u_char *query = (u_char *) malloc(ngx_strlen(&r->args)*sizeof(u_char *));
-    char *sep = "&";
-    char *kvsep = "=";
-    char *qs = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-    char *kv = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-    char *k = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-    char *v = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-    char *brkt = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-    char *brkb = (char *) malloc(ngx_strlen(&r->args)*sizeof(char *));
-
-    v = "";
-
-    ngx_sprintf(query, "%V", (u_char *) &r->args);
-    qs = (char *) query;
-    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "qs: %s", qs);
-
-    if(ngx_strlen(&r->args) > 0){
- 
-    for(kv = strtok_r(qs, sep, &brkt);
-        kv;
-        kv = strtok_r(NULL, sep, &brkt))
-    {
-	k = strtok_r(kv, kvsep, &brkb);
-	v = strtok_r(NULL, kvsep, &brkb);
-	//ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "k=v: %s=%s", k, v);
-
-	if(!strcmp(k, "callback")){
-	   break;
-        }
-
-    }
-
-    //ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "callback: %s", v);
-
-    }
-*/
+    /* Build response */
     size = sizeof("{active:,") + NGX_ATOMIC_T_LEN
            + sizeof("accepts:,handled:,requests:,") - 1
            + 6 + 3 * NGX_ATOMIC_T_LEN
            + sizeof("reading:,writing:,waiting:}") + 3 * NGX_ATOMIC_T_LEN;
 
-    if(strlen((char *) cb.data) > 0){
+    if(ngx_strlen(cb.data) > 0){
 	size += sizeof(cb.data) + sizeof("();") + NGX_ATOMIC_T_LEN;
     }
 
@@ -212,7 +181,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     rd = *ngx_stat_reading;
     wr = *ngx_stat_writing;
 
-    if(strlen((char *) cb.data) > 0){
+    if(ngx_strlen(cb.data) > 0){
 	b->last = ngx_sprintf(b->last, "%s(", cb.data);
     }
     b->last = ngx_sprintf(b->last, "{active:%uA,", ac);
@@ -222,7 +191,7 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
     b->last = ngx_sprintf(b->last, "reading:%uA,writing:%uA,waiting:%uA}",
                           rd, wr, ac - (rd + wr));
 
-    if(strlen((char *) cb.data) > 0){
+    if(ngx_strlen(cb.data) > 0){
 	b->last = ngx_sprintf(b->last, ");");
     }
 
