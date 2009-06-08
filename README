@@ -23,5 +23,3 @@ Example output - /nginx_status.js:
 Callback support - /nginx_status.js?callback=do_funky_stuff:
 do_funky_stuff({active:1,accepts:1,handled:1,requests:5,reading:0,writing:1,waiting:0});
 
-TODO:
- - Set mime-type in config
