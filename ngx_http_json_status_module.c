@@ -1,5 +1,7 @@
 /*
  *
+ * Copyright 2009 Lindsay Evans <http://linz.id.au/> 
+ * 
  * Based on ngx_http_stub_status_module.c, which is Copyright (C) Igor Sysoev
  *
  */
@@ -8,16 +10,30 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd,
-                                 void *conf);
+static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static void* ngx_http_json_status_create_loc_conf(ngx_conf_t *cf);
+static char* ngx_http_json_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
+
+
+
+typedef struct {
+    ngx_str_t	json_status_type;
+} ngx_http_json_status_loc_conf_t;
 
 static ngx_command_t  ngx_http_status_commands[] = {
 
     { ngx_string("json_status"),
-      NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
       ngx_http_set_status,
+      NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      0,
+      NULL },
+
+    { ngx_string("json_status_type"),
+      NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_json_status_loc_conf_t, json_status_type),
       NULL },
 
       ngx_null_command
@@ -34,9 +50,8 @@ static ngx_http_module_t  ngx_http_json_status_module_ctx = {
 
     NULL,                                  /* create server configuration */
     NULL,                                  /* merge server configuration */
-
-    NULL,                                  /* create location configuration */
-    NULL                                   /* merge location configuration */
+    ngx_http_json_status_create_loc_conf,  /* create location configuration */
+    ngx_http_json_status_merge_loc_conf	   /* merge location configuration */
 };
 
 
@@ -68,15 +83,24 @@ static ngx_int_t ngx_http_status_handler(ngx_http_request_t *r)
         return NGX_HTTP_NOT_ALLOWED;
     }
 
+
+    ngx_http_json_status_loc_conf_t	*cglcf;
+    cglcf = ngx_http_get_module_loc_conf(r, ngx_http_json_status_module);
+
     rc = ngx_http_discard_request_body(r);
 
     if (rc != NGX_OK) {
         return rc;
     }
 
-    // TODO: read from config json_status_type
-    r->headers_out.content_type.len = sizeof("application/json") - 1;
-    r->headers_out.content_type.data = (u_char *) "application/json";
+    // Read mime type from config var
+    if(ngx_strlen(&cglcf->json_status_type) > 0){
+	r->headers_out.content_type.len = sizeof(&cglcf->json_status_type) - 1;
+	r->headers_out.content_type.data = (u_char *) &cglcf->json_status_type;
+    }else{
+	r->headers_out.content_type.len = sizeof("application/json") - 1;
+	r->headers_out.content_type.data = (u_char *) "application/json";
+    }
 
     if (r->method == NGX_HTTP_HEAD) {
         r->headers_out.status = NGX_HTTP_OK;
@@ -212,6 +236,34 @@ static char *ngx_http_set_status(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
     clcf->handler = ngx_http_status_handler;
+
+    return NGX_CONF_OK;
+}
+
+static void *
+ngx_http_json_status_create_loc_conf(ngx_conf_t *cf)
+{
+    ngx_http_json_status_loc_conf_t  *conf;
+
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_json_status_loc_conf_t));
+    if (conf == NULL) {
+        return NGX_CONF_ERROR;
+    }
+    //conf->enable = NGX_CONF_UNSET;
+    return conf;
+}
+
+static char *
+ngx_http_json_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+{
+    ngx_http_json_status_loc_conf_t *prev = parent;
+    ngx_http_json_status_loc_conf_t *conf = child;
+
+    //ngx_conf_merge_value(conf->enable, prev->enable, 0);
+    ngx_conf_merge_str_value(conf->json_status_type, prev->json_status_type, "");
+
+    //if(conf->enable)
+    //    ngx_http_json_status_init(conf);
 
     return NGX_CONF_OK;
 }
